@@ -24,19 +24,30 @@ def preprocess_image(image: np.ndarray) -> np.ndarray:
     Regresa:
         np.ndarray: Imagen preprocesada con la placa resaltada.
     """
-    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)  # Convertir a escala de grises
+    # Convertir a escala de grises
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    # Aplicar un filtro bilateral para reducir el ruido mientras se conservan los bordes
-    filtered_image = cv2.bilateralFilter(gray_image, 11, 17, 17)
+    # Aplicar filtro Gaussiano para desenfocar la imagen
+    blurred_image = cv2.GaussianBlur(gray_image, (15, 15), 0)
 
-    # Aplicar detección de bordes usando Canny
-    edges = cv2.Canny(filtered_image, 30, 200)
+    # Aplicar filtro Sobel para detectar bordes en los ejes X y Y
+    sobel_x = cv2.Sobel(blurred_image, cv2.CV_64F, 1, 0, ksize=5)  # Sobel horizontal
+    sobel_y = cv2.Sobel(blurred_image, cv2.CV_64F, 0, 1, ksize=5)  # Sobel vertical
 
-    # Aplicar una transformación morfológica para cerrar pequeños espacios entre contornos
+    # Combinar ambos resultados de Sobel para obtener la magnitud
+    sobel_combined = cv2.magnitude(sobel_x, sobel_y)
+
+    # Aplicar un umbral a la imagen de Sobel
+    _, sobel_threshold = cv2.threshold(sobel_combined, 50, 255, cv2.THRESH_BINARY)
+
+    # Convertir el resultado a un formato adecuado
+    sobel_threshold = np.uint8(sobel_threshold)
+
+    # Aplicar una transformación morfológica
     kernel = np.ones((3, 3), np.uint8)
-    morph_image = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel, iterations=2)
+    morph_image = cv2.morphologyEx(sobel_threshold, cv2.MORPH_CLOSE, kernel, iterations=2)
 
-    return morph_image
+    return morph_image, gray_image, blurred_image, sobel_combined
 
 def detect_plate(image: np.ndarray, processed_image: np.ndarray) -> np.ndarray:
     """
@@ -52,7 +63,7 @@ def detect_plate(image: np.ndarray, processed_image: np.ndarray) -> np.ndarray:
     # Encontrar los contornos en la imagen procesada
     contours, _ = cv2.findContours(processed_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Ordenar los contornos por área para identificar la placa (asumiendo que es uno de los más grandes)
+    # Ordenar los contornos por área para identificar la placa
     contours = sorted(contours, key=cv2.contourArea, reverse=True)[:10]
     plate_contour = None
 
@@ -112,24 +123,46 @@ def main():
         return
 
     # Preprocesar la imagen
-    processed_image = preprocess_image(image)
+    processed_image, gray_image, blurred_image, sobel_combined = preprocess_image(image)
 
     # Detectar la placa
     plate_image = detect_plate(image, processed_image)
+
+    # Crear un plot con 4 subplots para mostrar todas las imágenes
+    fig, axes = plt.subplots(1, 4, figsize=(24, 6))
+    
+    # Mostrar imagen en escala de grises
+    axes[0].imshow(gray_image, cmap='gray')
+    axes[0].set_title("Imagen en Escala de Grises")
+    axes[0].axis('off')
+
+    # Mostrar imagen desenfocada
+    axes[1].imshow(blurred_image, cmap='gray')
+    axes[1].set_title("Imagen Desenfocada")
+    axes[1].axis('off')
+
+    # Mostrar imagen con Sobel (detección de bordes)
+    axes[2].imshow(sobel_combined, cmap='gray')
+    axes[2].set_title("Imagen con Sobel (Detección de Bordes)")
+    axes[2].axis('off')
 
     if plate_image is not None:
         # Extraer texto de la placa
         plate_text = ocr_plate(plate_image)
 
         # Mostrar la imagen de la placa recortada con los caracteres detectados en el título
-        plt.imshow(cv2.cvtColor(plate_image, cv2.COLOR_BGR2RGB))
-        plt.title(f"Placa Detectada: {plate_text}")
-        plt.axis('off')
-        plt.show()
+        axes[3].imshow(cv2.cvtColor(plate_image, cv2.COLOR_BGR2RGB))
+        axes[3].set_title(f"Placa Detectada: {plate_text}")
+        axes[3].axis('off')
 
         print(f"Texto detectado en la placa: {plate_text}")
     else:
-        print("No se pudo detectar una placa en la imagen.")
+        # Si no se detectó la placa, mostrar un mensaje en el último subplot
+        axes[3].text(0.5, 0.5, 'No se pudo detectar una placa', fontsize=12, ha='center')
+        axes[3].set_title("Placa No Detectada")
+        axes[3].axis('off')
+
+    plt.show()
 
 if __name__ == "__main__":
     main()
