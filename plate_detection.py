@@ -73,5 +73,25 @@ def detect_plate(image: np.ndarray, processed_image: np.ndarray) -> np.ndarray:
         return plate_image
     else:
         return None
+
+def ocr_plate(plate_image: np.ndarray) -> str:
+    """
+    Extrae los caracteres de la placa utilizando OCR.
+
+    Parámetros:
+        plate_image (np.ndarray): Imagen de la placa recortada.
     
-    
+    Regresa:
+        str: Texto extraído de la placa.
+    """
+    # Convertir la imagen a escala de grises para mejorar el OCR
+    gray_plate_image = cv2.cvtColor(plate_image, cv2.COLOR_BGR2GRAY)
+
+    # Aplicar umbralización para aumentar el contraste
+    _, threshold_plate_image = cv2.threshold(gray_plate_image, 150, 255, cv2.THRESH_BINARY)
+
+    # Usar OCR para extraer el texto
+    config = '--psm 8'  # PSM 8 trata cada palabra como una línea de texto
+    plate_text = pytesseract.image_to_string(threshold_plate_image, config=config)
+
+    return plate_text.strip()
