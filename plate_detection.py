@@ -95,3 +95,41 @@ def ocr_plate(plate_image: np.ndarray) -> str:
     plate_text = pytesseract.image_to_string(threshold_plate_image, config=config)
 
     return plate_text.strip()
+
+def main():
+    """
+    Función principal para detectar la placa y extraer los caracteres.
+    """
+    parser = argparse.ArgumentParser(description="Detecta la placa de un vehículo y extrae sus caracteres.")
+    parser.add_argument("-i", "--image", required=True, help="Ruta a la imagen de entrada.")
+    args = parser.parse_args()
+
+    # Leer la imagen de entrada
+    image = cv2.imread(args.image)
+
+    if image is None:
+        print("Error: No se pudo cargar la imagen.")
+        return
+
+    # Preprocesar la imagen
+    processed_image = preprocess_image(image)
+
+    # Detectar la placa
+    plate_image = detect_plate(image, processed_image)
+
+    if plate_image is not None:
+        # Extraer texto de la placa
+        plate_text = ocr_plate(plate_image)
+
+        # Mostrar la imagen de la placa recortada con los caracteres detectados en el título
+        plt.imshow(cv2.cvtColor(plate_image, cv2.COLOR_BGR2RGB))
+        plt.title(f"Placa Detectada: {plate_text}")
+        plt.axis('off')
+        plt.show()
+
+        print(f"Texto detectado en la placa: {plate_text}")
+    else:
+        print("No se pudo detectar una placa en la imagen.")
+
+if _name_ == "_main_":
+    main()
