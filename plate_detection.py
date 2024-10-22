@@ -131,5 +131,5 @@ def main():
     else:
         print("No se pudo detectar una placa en la imagen.")
 
-if _name_ == "_main_":
+if __name__ == "_main_":
     main()
