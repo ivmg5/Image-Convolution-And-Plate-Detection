@@ -114,3 +114,32 @@ def generate_gaussian_kernel(size: int, sigma: float) -> np.ndarray:
 
     kernel = kernel / np.sum(kernel)
     return kernel
+
+def generate_sobel_kernel(size: int, sigma: float) -> np.ndarray:
+    """
+    Genera un kernel Sobel personalizado con tamaño y sigma ajustables.
+
+    El filtro Sobel se utiliza para la detección de bordes, ya que realza los 
+    cambios abruptos en intensidad de píxeles, lo que permite identificar 
+    bordes en la imagen.
+
+    Parámetros:
+        size (int): Tamaño del kernel (debe ser impar y al menos 3).
+        sigma (float): Desviación estándar para el suavizado Gaussiano aplicado antes del cálculo del gradiente.
+
+    Regresa:
+        np.ndarray: Kernel Sobel personalizado.
+    """
+    if size % 2 == 0:
+        size += 1
+    if size < 3:
+        size = 3
+
+    k = size // 2
+    x, y = np.meshgrid(np.arange(-k, k + 1), np.arange(-k, k + 1))
+
+    # Calcular el kernel Sobel en X (detectar bordes horizontales)
+    sobel_x = -x / (2 * np.pi * sigma*4) * np.exp(-(x2 + y2) / (2 * sigma*2))
+
+    sobel_x = sobel_x / np.sum(np.abs(sobel_x))
+    return sobel_x
