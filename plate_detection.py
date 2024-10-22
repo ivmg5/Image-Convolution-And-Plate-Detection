@@ -37,3 +37,41 @@ def preprocess_image(image: np.ndarray) -> np.ndarray:
     morph_image = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel, iterations=2)
 
     return morph_image
+
+def detect_plate(image: np.ndarray, processed_image: np.ndarray) -> np.ndarray:
+    """
+    Detecta la placa del vehículo en la imagen.
+
+    Parámetros:
+        image (np.ndarray): Imagen original.
+        processed_image (np.ndarray): Imagen preprocesada (binarizada).
+
+    Regresa:
+        np.ndarray: La región de la imagen que contiene la placa.
+    """
+    # Encontrar los contornos en la imagen procesada
+    contours, _ = cv2.findContours(processed_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Ordenar los contornos por área para identificar la placa (asumiendo que es uno de los más grandes)
+    contours = sorted(contours, key=cv2.contourArea, reverse=True)[:10]
+    plate_contour = None
+
+    for contour in contours:
+        # Aproximar la forma del contorno
+        epsilon = 0.018 * cv2.arcLength(contour, True)
+        approx = cv2.approxPolyDP(contour, epsilon, True)
+
+        # Si el contorno tiene 4 lados, es probable que sea la placa
+        if len(approx) == 4:
+            plate_contour = approx
+            break
+
+    if plate_contour is not None:
+        # Obtener el rectángulo delimitador de la placa
+        x, y, w, h = cv2.boundingRect(plate_contour)
+        plate_image = image[y:y+h, x:x+w]
+        return plate_image
+    else:
+        return None
+    
+    
