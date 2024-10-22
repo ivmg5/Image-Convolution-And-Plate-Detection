@@ -139,7 +139,61 @@ def generate_sobel_kernel(size: int, sigma: float) -> np.ndarray:
     x, y = np.meshgrid(np.arange(-k, k + 1), np.arange(-k, k + 1))
 
     # Calcular el kernel Sobel en X (detectar bordes horizontales)
-    sobel_x = -x / (2 * np.pi * sigma*4) * np.exp(-(x2 + y2) / (2 * sigma*2))
+    sobel_x = -x / (2 * np.pi * sigma*4) * np.exp(-(x**2 + y**2) / (2 * sigma*2))
 
     sobel_x = sobel_x / np.sum(np.abs(sobel_x))
-    return sobel_x
+    return sobel_x
+
+def main():
+    """
+    Función principal para analizar los argumentos y ejecutar la operación de convolución.
+    """
+    parser = argparse.ArgumentParser(description="Performs a convolution on an image using different filters and padding.")
+    parser.add_argument("-i", "--image", required=True, help="Path to the input image.")
+    parser.add_argument("-f", "--filter", choices=['gaussian', 'sobel'], default='gaussian', help="Filter to apply: 'gaussian' or 'sobel'.")
+    parser.add_argument("-p", "--padding", choices=['valid', 'same'], default='valid', help="Padding type: 'valid' (no padding) or 'same' (zero padding).")
+    parser.add_argument("-k", "--kernel_size", type=int, default=3, help="Kernel size (must be odd).")
+    parser.add_argument("-s", "--sigma", type=float, default=1.0, help="Sigma value for the kernel.")
+    args = parser.parse_args()
+
+    # Leer la imagen de entrada
+    image = cv2.imread(args.image)
+
+    if image is None:
+        print("Error: Image not found or could not be loaded.")
+        return
+
+    # Seleccionar el filtro
+    if args.filter == 'gaussian':
+        kernel = generate_gaussian_kernel(size=args.kernel_size, sigma=args.sigma)
+        filter_name = f"Gaussian (Size: {args.kernel_size}, Sigma: {args.sigma})"
+        convolved_image = convolution(image, kernel, padding=args.padding)
+    elif args.filter == 'sobel':
+        kernel = generate_sobel_kernel(size=args.kernel_size, sigma=args.sigma)
+        filter_name = f"Sobel (Size: {args.kernel_size}, Sigma: {args.sigma})"
+        convolved_image = convolution(image, kernel, padding=args.padding)
+    else:
+        print("Error: Unsupported filter.")
+        return
+
+    # Mostrar las imágenes original y convolucionada
+    plt.figure(figsize=(12, 6))
+
+    plt.subplot(1, 2, 1)
+    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    plt.title("Original Image")
+    plt.axis("off")
+
+    plt.subplot(1, 2, 2)
+    if args.filter == 'sobel':
+        plt.imshow(cv2.cvtColor(convolved_image, cv2.COLOR_BGR2GRAY), cmap='gray')
+    else:
+        plt.imshow(cv2.cvtColor(convolved_image, cv2.COLOR_BGR2RGB))
+    plt.title(f"Image with {filter_name}\nPadding: {args.padding}")
+    plt.axis("off")
+
+    plt.tight_layout()
+    plt.show()
+
+if __name__ == "__main__":
+    main()
