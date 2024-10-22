@@ -89,3 +89,28 @@ def convolution_2d(image: np.ndarray, kernel: np.ndarray, padding: str) -> np.nd
     # Limitar los valores para que estén dentro del rango válido
     output = np.clip(output, 0, 255)
     return output.astype(np.uint8)
+
+def generate_gaussian_kernel(size: int, sigma: float) -> np.ndarray:
+    """
+    Genera un kernetl gaussiano de un tamaño y sigma dados.
+
+    El filtro Gaussiano se utiliza para suavizar la imagen, reduciendo el ruido 
+    y los detalles. Esto es útil para eliminar artefactos no deseados y lograr 
+    un efecto de desenfoque.
+
+    Parámetros:
+        size (int): Tamaño del kernel.
+        sigma (float): Desviación típica de la distribución Gaussiana.
+
+    Regresa:
+        np.ndarray: Kernel Gaussiano normalizado.
+    """
+    if size % 2 == 0:
+        size += 1
+
+    ax = np.linspace(-(size // 2), size // 2, size)
+    gauss = np.exp(-0.5 * np.square(ax) / np.square(sigma))
+    kernel = np.outer(gauss, gauss)
+
+    kernel = kernel / np.sum(kernel)
+    return kernel
