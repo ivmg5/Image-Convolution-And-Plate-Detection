@@ -2,10 +2,6 @@
 """
 Este script realiza la detección del número de placa en una imagen de entrada
 y utiliza OCR para extraer los caracteres de la placa.
-
-Authors:
-Diego (A01643382)
-Gabo (A01642991)
 """
 
 import cv2
