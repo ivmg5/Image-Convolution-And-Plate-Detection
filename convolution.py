@@ -2,10 +2,6 @@
 """
 Este script realiza una operación de convolución en una imagen de entrada utilizando diferentes filtros
 (Sobel y Gaussian) y admite el padding para controlar el tamaño de la salida.
-
-Authors:
-Diego (A01643382)
-Gabo (A01642991)
 """
 
 import argparse
